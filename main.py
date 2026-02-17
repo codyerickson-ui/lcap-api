@@ -19,7 +19,7 @@ def retrieve_lcap(data: dict):
         raise HTTPException(status_code=400, detail="Missing pdf_url")
 
     try:
-        response = requests.get(pdf_url, timeout=120)
+        response = requests.get(pdf_url, timeout=180)
         response.raise_for_status()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Download failed: {str(e)}")
@@ -35,6 +35,10 @@ def retrieve_lcap(data: dict):
 
             if start_page < 0 or start_page >= total_pages:
                 raise HTTPException(status_code=400, detail="Invalid start_page")
+
+            # 🔒 Hard safety cap — max 20 pages per call
+            if end_page - start_page > 20:
+                end_page = start_page + 20
 
             full_text = ""
 
@@ -52,6 +56,7 @@ def retrieve_lcap(data: dict):
         "total_pages": total_pages,
         "start_page": start_page,
         "end_page": end_page,
+        "pages_returned": end_page - start_page,
         "text_length": len(full_text),
         "text": full_text
     }
